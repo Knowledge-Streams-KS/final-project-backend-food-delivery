@@ -9,6 +9,8 @@ const appData = express();
 appData.use(express.json());
 appData.use("/uploads", express.static("uploads"));
 
+appData.use(express.urlencoded({ extended: true }));
+
 appData.use(cors());
 connectDB();
 syncDB().then(console.log("DB Synced!"));

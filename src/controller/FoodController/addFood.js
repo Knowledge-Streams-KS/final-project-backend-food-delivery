@@ -1,4 +1,6 @@
 import FoodModel from "../../model/FoodSchema/FoodSchema.js";
+import fs from "fs";
+import path from "path";
 
 const FoodController = {
   getAll: async (req, res) => {
@@ -60,6 +62,7 @@ const FoodController = {
 
       return res.status(200).json({
         message: "Food Added",
+        Food,
       });
     } catch (err) {
       return res.status(500).json({
@@ -68,60 +71,95 @@ const FoodController = {
       });
     }
   },
+  update: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const payload = req.body;
+      console.log("Payload: ", payload);
+      // Find the food item by ID
+      const food = await FoodModel.findByPk(id);
+      console.log("Food:", food);
+      if (!food) {
+        return res.status(404).json({
+          message: "Food not found",
+        });
+      }
+      // Update the food item with the new data
+      if (payload.Name) {
+        food.Name = payload.Name;
+      }
+      if (payload.Description) {
+        food.Description = payload.Description;
+      }
+      if (payload.Price) {
+        food.Price = payload.Price;
+      }
+      if (payload.Image) {
+        food.Image = payload.Image; // Ensure the field name matches your schema
+      }
+      if (payload.Category) {
+        food.Category = payload.Category;
+      }
+      // Save the updated food item
+      await food.save();
+      console.log(food);
+      console.log("Payload", payload);
+      console.log("Request: ", req);
+      console.log(payload.food);
+      res.status(200).json({
+        message: "Food Updated",
+        food,
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+        error,
+      });
+    }
+  },
 
-  // update: (req, res) => {
-  //   try {
-  //     const { id } = req.params;
-  //     const payload = req.body;
-  //     const FoodIndex = Foods.findIndex((ele) => ele.id == id);
-  //     if (FoodIndex == -1) {
-  //       return res.status(404).json({
-  //         message: "Data not founded",
-  //       });
-  //     }
-  //     if (payload.id) {
-  //       Foods[FoodIndex].id = payload.id;
-  //     }
-  //     if (payload.Name) {
-  //       Foods[FoodIndex].Name = payload.Name;
-  //     }
-  //     if (payload.cohort) {
-  //       Foods[FoodIndex].cohort = payload.cohort;
-  //     }
-  //     res.status(200).json({
-  //       message: "Student Updated",
-  //       students,
-  //     });
-  //   } catch (error) {
-  //     res.status(404).json({
-  //       message: "Student not founded",
-  //     });
-  //   }
-  // },
-  // delete: async (req, res) => {
-  //   try {
-  //     const id = req.params.id;
-  //     const productToDelete = await productModel.findByPk(id);
-  //     if (!productToDelete) {
-  //       res.status(404).json({
-  //         message: "Product you are trying to delete does not exist",
-  //       });
-  //     } else {
-  //       await productModel.destroy({
-  //         where: {
-  //           id: id,
-  //         },
-  //       });
-  //       res.json({
-  //         message: "Product deleted successfully",
-  //       });
-  //     }
-  //   } catch (err) {
-  //     res.status(500).json({
-  //       message: "Internal Server Error",
-  //     });
-  //   }
-  // },
+  delete: async (req, res) => {
+    try {
+      const id = req.params.id;
+      const food = await FoodModel.findByPk(id);
+      if (!food) {
+        return res.status(404).json({
+          message: "Food you are trying to delete does not exist",
+        });
+      } else {
+        const filePath = path.join("uploads", food.Image);
+
+        // Use fs.unlink to delete the file
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.error("Error deleting file:", err.message);
+            return res.status(500).json({
+              message: "Error deleting file",
+              error: err.message,
+            });
+          } else {
+            console.log("File deleted successfully");
+          }
+        });
+
+        // Delete the record from the database
+        await FoodModel.destroy({
+          where: {
+            id: id,
+          },
+        });
+
+        return res.json({
+          message: "Food deleted successfully",
+        });
+      }
+    } catch (err) {
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: err.message,
+      });
+    }
+  },
 };
 
 export default FoodController;
