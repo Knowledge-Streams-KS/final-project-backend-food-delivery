@@ -120,46 +120,40 @@ const FoodController = {
 
   delete: async (req, res) => {
     try {
-      const id = req.params.id;
-      const food = await FoodModel.findByPk(id);
-      if (!food) {
-        return res.status(404).json({
-          message: "Food you are trying to delete does not exist",
-        });
-      } else {
-        const filePath = path.join("uploads", food.Image);
+      const id = req.query.id;
 
-        // Use fs.unlink to delete the file
-        fs.unlink(filePath, (err) => {
-          if (err) {
-            console.error("Error deleting file:", err.message);
-            return res.status(500).json({
-              message: "Error deleting file",
-              error: err.message,
-            });
-          } else {
-            console.log("File deleted successfully");
-          }
-        });
-
-        // Delete the record from the database
-        await FoodModel.destroy({
-          where: {
-            id: id,
-          },
-        });
-
-        return res.json({
-          message: "Food deleted successfully",
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "ID is required",
         });
       }
+
+      // Delete the record from the database
+      const deletedCount = await FoodModel.destroy({
+        where: {
+          id: id,
+        },
+      });
+
+      if (deletedCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Food item not found",
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "Food deleted successfully",
+      });
     } catch (err) {
       return res.status(500).json({
+        success: false,
         message: "Internal Server Error",
         error: err.message,
       });
     }
   },
 };
-
 export default FoodController;
